@@ -1,0 +1,9 @@
+README.md
+setup.py
+IsoDAT2D/IsoDAT2D.py
+IsoDAT2D/__init__.py
+IsoDat2D.egg-info/PKG-INFO
+IsoDat2D.egg-info/SOURCES.txt
+IsoDat2D.egg-info/dependency_links.txt
+IsoDat2D.egg-info/requires.txt
+IsoDat2D.egg-info/top_level.txt

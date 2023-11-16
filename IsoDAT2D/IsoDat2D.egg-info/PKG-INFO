@@ -1,0 +1,8 @@
+Metadata-Version: 2.1
+Name: IsoDat2D
+Version: 0.1.0
+Summary: To process thin film X-ray total scattering data using unsupervised machine learning
+Home-page: https://github.com/dnalverson/ml-for-thinfilmdata
+Author-email: dalverson@ufl.edu
+
+Combining non-negative matrix factorization and clustering algorithms to process thin film X-ray total scattering data and separate isotropic and anisotropic components
