@@ -4,5 +4,10 @@ Version: 0.1.0
 Summary: To process thin film X-ray total scattering data using unsupervised machine learning
 Home-page: https://github.com/dnalverson/ml-for-thinfilmdata
 Author-email: dalverson@ufl.edu
+Requires-Dist: matplotlib
+Requires-Dist: pyFAI
+Requires-Dist: scipy
+Requires-Dist: numpy
+Requires-Dist: scikit-learn
 
 Combining non-negative matrix factorization and clustering algorithms to process thin film X-ray total scattering data and separate isotropic and anisotropic components

@@ -15,7 +15,7 @@ import glob as glob
 from tifffile import imread, imshow
 import warnings
 import os
-import dask
+from dask import compute, delayed
 
 
 def attempt(Real_Data, Length, i, init= None, solver = 'cd', beta_loss = 'frobenius', iter = 500):
@@ -54,7 +54,7 @@ def Run_NMF(Real_Data, init= None, solver = 'cd', beta_loss = 'frobenius', itear
     The function uses Dask for parallel computing, and opens a web browser to display the Dask dashboard. 
     """
     import dask.delayed
-    import dask.compute
+    from dask import compute, delayed
     import numpy as np
     import pandas as pd
     import matplotlib.pyplot as plt
@@ -62,7 +62,7 @@ def Run_NMF(Real_Data, init= None, solver = 'cd', beta_loss = 'frobenius', itear
     from dask.distributed import Client
     client = Client()
     import webbrowser
-    webbrowser.open(client.dashboard_link)
+    #webbrowser.open(client.dashboard_link)
 
     # Initialize variables
     In = init
