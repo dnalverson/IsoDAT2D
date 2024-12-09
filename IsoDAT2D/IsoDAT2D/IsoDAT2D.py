@@ -170,6 +170,68 @@ def smooth_components(Identified_components, filter_strength = 2, show = False):
     # Returning the smoothed components
     return smoothed_compos
 
+import pyFAI.azimuthalIntegrator as AI
+import pyopencl.array as cla
+
+def time_function(func):
+    def wrapper(*args, **kwargs):
+        start_time = time.time()
+        result = func(*args, **kwargs)
+        end_time = time.time()
+        print(f"{func.__name__} executed in {end_time - start_time:.4f} seconds")
+        return result
+    return wrapper
+
+
+@time_function
+def rotate_integrate_image_gpu(combined_image,angle_of_rotation, distance, wavelength, resolution = 3000, mask = None, show = True, radial_range = None):
+    """
+    This function integrates the combined image using the azimuthal integrator and displays the 1D image.
+    
+    Parameters:
+        combined_image (2D array): The image of the combined spots and calibration.
+    """
+    data = {}
+    #initialize the azimuthal integrator
+    
+     # Initialize the detector
+    dete = pyFAI.detectors.Perkin()
+    p1, p2, p3 = dete.calc_cartesian_positions()
+    poni1 = p1.mean()
+    poni2 = p2.mean()
+    
+    target = (0,0)
+    ai = AI.AzimuthalIntegrator(dist=distance, poni1=poni1, poni2=poni2, detector=dete, wavelength=wavelength)
+    #initialize engine
+    res0 = ai.integrate1d(combined_image, resolution, radial_range = radial_range, unit = 'q_A^-1', mask = mask, method=("bbox", "csr", "opencl", target))
+    
+    # Get the engine from res0
+    engine = ai.engines[res0.method].engine
+    omega = ai.solidAngleArray()
+    omega_crc = engine.on_device["solidangle"]
+    for i in range(0, 360, angle_of_rotation):
+        # start_time = time.time()
+        #rotate the mask for the combined image
+        rotated_image = image_rotation(combined_image, i)
+    
+        rotated_image_d = cla.to_device(engine.queue,rotated_image)
+    
+        res1 = engine.integrate_ng(rotated_image_d, solidangle=omega, solidangle_checksum=omega_crc)
+        # print(time.time() - start_time)
+        data[i] = res1.intensity
+        
+    df = pd.DataFrame(data)
+    
+    plt.figure(figsize=(10, 10))
+    for j in range(0, 360, angle_of_rotation):
+            plt.plot(q, (df[j]+ j*.01), alpha = .55, c = 'black')
+    plt.xlabel('q A $^(-1)$')
+    plt.ylabel('Intensity')
+    plt.title("Waterfall Plot of Rotated 1D X-Ray Diffraction Images")
+    plt.show()        
+    
+    return df
+
 def run_nmfac(Data, initialize_iter = 0, clusters = 5):
     """A function that will run the NMF algorithm and then cluster with agglomerative clustering the components and returns the 
         identified components for later PDF analysis. The function starts with a random initializer
