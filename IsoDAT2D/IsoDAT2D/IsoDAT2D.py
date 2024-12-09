@@ -15,6 +15,8 @@ from tifffile import imread, imshow
 import warnings
 import dask
 import nimfa
+import pyFAI
+from sklearn.cluster import AgglomerativeClustering
 
 def attempt(Real_Data, Length, i, init= None, solver = 'cd', beta_loss = 'frobenius', iter = 500):
     NMF_model = NMF(n_components=i, init = init, solver = solver, beta_loss = beta_loss, max_iter = iter)
@@ -173,6 +175,8 @@ def smooth_components(Identified_components, filter_strength = 2, show = False):
 
 import pyFAI.azimuthalIntegrator as AI
 import pyopencl.array as cla
+import time
+import cv2
 
 def time_function(func):
     def wrapper(*args, **kwargs):
@@ -183,6 +187,21 @@ def time_function(func):
         return result
     return wrapper
 
+@time_function
+def image_rotation(image, angle, show = False):
+    
+    (h, w) = image.shape[:2]
+    center = (w // 2, h // 2)
+    rotation_matrix = cv2.getRotationMatrix2D(center, angle, 1.0)
+    rotated_image = cv2.warpAffine(image, rotation_matrix, (w, h), flags=cv2.INTER_LINEAR, borderMode=cv2.BORDER_REFLECT)
+    
+    if show == True:
+        #display the rotated image
+        plt.figure(figsize=(10, 10))
+        plt.imshow(rotated_image, cmap='viridis')
+        plt.title("Rotated Image")
+        plt.show()
+    return rotated_image
 
 @time_function
 def rotate_integrate_image_gpu(combined_image,angle_of_rotation, distance, wavelength, resolution = 3000, mask = None, show = True, radial_range = None):
@@ -225,7 +244,7 @@ def rotate_integrate_image_gpu(combined_image,angle_of_rotation, distance, wavel
     
     plt.figure(figsize=(10, 10))
     for j in range(0, 360, angle_of_rotation):
-            plt.plot(q, (df[j]+ j*.01), alpha = .55, c = 'black')
+            plt.plot((df[j]+ j*.01), alpha = .55, c = 'black')
     plt.xlabel('q A $^(-1)$')
     plt.ylabel('Intensity')
     plt.title("Waterfall Plot of Rotated 1D X-Ray Diffraction Images")
@@ -234,7 +253,7 @@ def rotate_integrate_image_gpu(combined_image,angle_of_rotation, distance, wavel
     return df
 
 def run_nimfa_nmf(data, n_components):
-    nmf = nimfa.Nmf(data, rank=n_components, max_iter=600, update = 'euclidean', objective = 'fro', n_run = 30, track_error=True)
+    nmf = nimfa.Nmf(data, rank=n_components, seed ="random_c", max_iter=600, update = 'divergence', objective = 'div', n_run = 30, track_error=True)
     nmf_fit = nmf()
     W = nmf_fit.basis()
     H = nmf_fit.coef()
@@ -253,22 +272,20 @@ def run_nimfa_nmf(data, n_components):
     
     return W, H, er
 
-def run_HAC(Number_Clusters, basis_data, from_nimfa = False):
+def run_HAC(Number_Clusters, data):
     """A program that will take in the type of scikitlearn clustering algorithm
     desired and the number of clusters as well as the data in a numpy array
     and output the associated clusters with the original data. This will make
     the 'latent' space from the clustering algorithms have more meaning"""
     
-    if from_nimfa == True:
-        data_list = []
-        i = 0
-        while i < len(basis_data.T)-1:
-            data_list.append(basis_data[:,i])
-            i += 1
-    data = np.array(data_list)
+    # data_list = []
+    # i = 0
+    # while i < len(basis_data.T)-1:
+    #     data_list.append(basis_data[:,i])
+    #     i += 1
+    # data = np.array(data_list)
     
-    if from_nimfa == False:
-        data = basis_data
+    # print(data.shape)
 
     # Initialize and fit the Agglomerative Clustering model
     Make_Clusters = AgglomerativeClustering(n_clusters=Number_Clusters, compute_distances=True)
@@ -306,12 +323,26 @@ def run_HAC(Number_Clusters, basis_data, from_nimfa = False):
 
     return Understanding_data, data_list
 
+
 def run_nmf_and_agg_cluster(rotated_data, n_components, n_clusters):
     """A function that will run the NMF algorithm and then cluster with agglomerative clustering the components and returns the
     identified components for later PDF analysis."""
     
     #running nmf algorith and returning the basis, coefficient, and error matricies
     basis, coefficient, err = run_nimfa_nmf(rotated_data, n_components)
+    
+    print(basis.shape)
+    
+    basis_np = np.array(basis)
+    
+    data = []
+    i = 0
+    while i < len(basis_np.T)-1:
+        data.append(basis_np[:,i])
+        i += 1
+    data_np = np.array(data)
+    
+    print(type(data_np))
     
     #plotting error from the nmf run
     plt.figure(figsize=(10, 6))
@@ -323,7 +354,7 @@ def run_nmf_and_agg_cluster(rotated_data, n_components, n_clusters):
     plt.show()
     
     #running the returned basis matrix through the agglomerative clustering algorithm
-    all_data, found_comps = run_HAC(n_clusters, basis, from_nimfa=True)
+    all_data, found_comps = run_HAC(n_clusters, data_np)
     
     return all_data, found_comps
 
