@@ -14,6 +14,7 @@ import glob as glob
 from tifffile import imread, imshow
 import warnings
 import dask
+import nimfa
 
 def attempt(Real_Data, Length, i, init= None, solver = 'cd', beta_loss = 'frobenius', iter = 500):
     NMF_model = NMF(n_components=i, init = init, solver = solver, beta_loss = beta_loss, max_iter = iter)
@@ -231,6 +232,100 @@ def rotate_integrate_image_gpu(combined_image,angle_of_rotation, distance, wavel
     plt.show()        
     
     return df
+
+def run_nimfa_nmf(data, n_components):
+    nmf = nimfa.Nmf(data, rank=n_components, max_iter=600, update = 'euclidean', objective = 'fro', n_run = 30, track_error=True)
+    nmf_fit = nmf()
+    W = nmf_fit.basis()
+    H = nmf_fit.coef()
+    # print('Basis matrix:\n%s' % W.todense())
+    # print('Mixture matrix:\n%s' % H.todense())
+    er = nmf_fit.fit.tracker.get_error()
+
+    print('Euclidean distance: %5.3f' % nmf_fit.distance(metric='euclidean'))
+    # Objective function value for each iteration
+    print('Error tracking:\n%s' % nmf_fit.fit.tracker.get_error())
+
+    sm = nmf_fit.summary()
+    print('Sparseness Basis: %5.3f  Mixture: %5.3f' % (sm['sparseness'][0], sm['sparseness'][1]))
+    print('Iterations: %d' % sm['n_iter'])
+    #print('Target estimate:\n%s' % np.dot(W.todense(), H.todense()))
+    
+    return W, H, er
+
+def run_HAC(Number_Clusters, basis_data, from_nimfa = False):
+    """A program that will take in the type of scikitlearn clustering algorithm
+    desired and the number of clusters as well as the data in a numpy array
+    and output the associated clusters with the original data. This will make
+    the 'latent' space from the clustering algorithms have more meaning"""
+    
+    if from_nimfa == True:
+        data_list = []
+        i = 0
+        while i < len(basis_data.T)-1:
+            data_list.append(basis_data[:,i])
+            i += 1
+    data = np.array(data_list)
+    
+    if from_nimfa == False:
+        data = basis_data
+
+    # Initialize and fit the Agglomerative Clustering model
+    Make_Clusters = AgglomerativeClustering(n_clusters=Number_Clusters, compute_distances=True)
+    y_kmeans = Make_Clusters.fit_predict(data)
+    distances = Make_Clusters.distances_
+
+    # Prepare the data for understanding
+    Understanding_data = {
+        "Cluster_Number": y_kmeans.tolist(),
+        "Int_Angle": data.tolist()
+    }               
+    
+    # Create an empty list to store the data
+    data_list = []
+
+    # Plot and analyze each cluster
+    for q in range(Number_Clusters):
+        plt.figure(figsize=(5, 5))
+        plt.xlabel('X')
+        plt.ylabel('Y')
+        plt.title(f'Agglomerative Clustering {q}')
+
+        for z in range(len(data)):
+            if Understanding_data["Cluster_Number"][z] == q:
+                plt.plot(Understanding_data["Int_Angle"][z], label=f'Component {z}')
+        
+        #plt.legend()
+        plt.show(block=False)
+        plt.pause(0.1)
+
+        if input("Do the identified components look like an isotropic scattering signal? (y/n) ") == 'y':
+            for i in range(len(data)):
+                if Understanding_data["Cluster_Number"][i] == q:
+                    data_list.append(Understanding_data["Int_Angle"][i])
+
+    return Understanding_data, data_list
+
+def run_nmf_and_agg_cluster(rotated_data, n_components, n_clusters):
+    """A function that will run the NMF algorithm and then cluster with agglomerative clustering the components and returns the
+    identified components for later PDF analysis."""
+    
+    #running nmf algorith and returning the basis, coefficient, and error matricies
+    basis, coefficient, err = run_nimfa_nmf(rotated_data, n_components)
+    
+    #plotting error from the nmf run
+    plt.figure(figsize=(10, 6))
+    plt.plot(range(1, len(err) + 1), err, marker='o')
+    plt.title('Elbow Plot of NMF Error')
+    plt.xlabel('Number of Components')
+    plt.ylabel('Reconstruction Error')
+    plt.grid(True)
+    plt.show()
+    
+    #running the returned basis matrix through the agglomerative clustering algorithm
+    all_data, found_comps = run_HAC(n_clusters, basis, from_nimfa=True)
+    
+    return all_data, found_comps
 
 def run_nmfac(Data, initialize_iter = 0, clusters = 5):
     """A function that will run the NMF algorithm and then cluster with agglomerative clustering the components and returns the 
