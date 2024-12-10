@@ -253,7 +253,7 @@ def rotate_integrate_image_gpu(combined_image,angle_of_rotation, distance, wavel
     return df
 
 def run_nimfa_nmf(data, n_components):
-    nmf = nimfa.Nmf(data, rank=n_components, seed ="random_c", max_iter=600, update = 'divergence', objective = 'div', n_run = 30, track_error=True)
+    nmf = nimfa.Nmf(data, rank=n_components, max_iter=600, update='divergence', objective ='div', n_run = 30, track_error=True)
     nmf_fit = nmf()
     W = nmf_fit.basis()
     H = nmf_fit.coef()
@@ -324,6 +324,8 @@ def run_HAC(Number_Clusters, data):
     return Understanding_data, data_list
 
 
+from sklearn.preprocessing import StandardScaler
+
 def run_nmf_and_agg_cluster(rotated_data, n_components, n_clusters):
     """A function that will run the NMF algorithm and then cluster with agglomerative clustering the components and returns the
     identified components for later PDF analysis."""
@@ -333,6 +335,7 @@ def run_nmf_and_agg_cluster(rotated_data, n_components, n_clusters):
     
     print(basis.shape)
     
+    #converting the basis matrix to a numpy array and data to input into the agglomerative clustering algorithm
     basis_np = np.array(basis)
     
     data = []
@@ -342,7 +345,7 @@ def run_nmf_and_agg_cluster(rotated_data, n_components, n_clusters):
         i += 1
     data_np = np.array(data)
     
-    print(type(data_np))
+    #scaled_data = StandardScaler().fit_transform(data_np)
     
     #plotting error from the nmf run
     plt.figure(figsize=(10, 6))
