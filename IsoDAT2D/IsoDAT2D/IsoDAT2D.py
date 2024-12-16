@@ -17,6 +17,7 @@ import dask
 import nimfa
 import pyFAI
 from sklearn.cluster import AgglomerativeClustering
+import masking
 
 def attempt(Real_Data, Length, i, init= None, solver = 'cd', beta_loss = 'frobenius', iter = 500):
     NMF_model = NMF(n_components=i, init = init, solver = solver, beta_loss = beta_loss, max_iter = iter)
@@ -84,6 +85,23 @@ def Run_NMF(Real_Data, init= None, solver = 'cd', beta_loss = 'frobenius', itear
             i = i+1
     
     return m,NMF_Data_2, min_Q
+
+#masking algoirthm to create masks for the data
+
+def make_masks(array, slices, offset = 5, width=.5, gits = False):
+    masks = []
+    mask_2048 = np.zeros((2048, 2048), dtype=bool)
+    mask_2048[1024:] = True
+    for i in slices:
+        masks.append(masking.generate_mask_slices(array, width, i, offset = offset))
+        print('Mask with {} slices created'.format(i))
+        if gits == True:
+            gits_masks = []
+            for i in range(len(masks)):
+                masks_p = masks[i] + mask_2048
+                gits_masks.append(masks_p)
+                plt.imshow(masks_p)
+    return gits_masks
 
 def AggCluster(Number_Clusters, data):
     
@@ -423,3 +441,246 @@ def run_nmfac(Data, initialize_iter = 0, clusters = 5):
             
         
     return found_compos
+
+import numpy as np
+from sklearn.decomposition import NMF
+import logging
+import warnings
+import random
+import matplotlib.pyplot as plt
+
+# Configure logging
+logging.basicConfig(level=logging.INFO)
+
+def run_sklearn_nmf(data, max_components, max_iter=600, init='random', solver='cd', tol=1e-4, patience=5, randomize_init=True):
+    """
+    Run NMF using the sklearn library with flexible parameters and iterate over the number of components until error stabilizes.
+
+    Parameters:
+    - data: Input data matrix.
+    - max_components: Maximum number of components to try.
+    - max_iter: Maximum number of iterations (default: 600).
+    - init: Initialization method (default: 'random').
+    - solver: Solver to use (default: 'cd').
+    - tol: Tolerance for error change to consider it stabilized (default: 1e-4).
+    - patience: Number of runs to wait for error stabilization (default: 5).
+    - randomize_init: Whether to randomly initialize parameters (default: True).
+
+    Returns:
+    - best_W: Best basis matrix.
+    - best_H: Best coefficient matrix.
+    - best_reconstruction_err: Best reconstruction error.
+    - previous_errors: List of reconstruction errors from all runs.
+    """
+    
+    warnings.filterwarnings("ignore")
+    
+    best_W, best_H = None, None
+    best_reconstruction_err = float('inf')
+    best_n_components = 0
+    previous_errors = []
+
+    if randomize_init:
+        init_options = ['random', 'nndsvd', 'nndsvda', 'nndsvdar']
+        solver_options = ['cd', 'mu']
+        tol_options = [1e-4, 1e-5, 1e-6]
+
+        for _ in range(10):  # Run 10 times with random initializers at 10 components each
+            init = random.choice(init_options)
+            solver = random.choice(solver_options)
+            tol = random.choice(tol_options)
+            
+            model = NMF(n_components=10, max_iter=max_iter, init=init, solver=solver, tol=tol)
+            W = model.fit_transform(data)
+            H = model.components_
+            reconstruction_err = model.reconstruction_err_
+
+            logging.info('Random Init Run - Init: %s, Solver: %s, Tol: %e, Reconstruction error: %5.3f', init, solver, tol, reconstruction_err)
+            
+            if reconstruction_err < best_reconstruction_err:
+                best_W, best_H = W, H
+                best_reconstruction_err = reconstruction_err
+
+        
+        print('Random initializers completed\nContinuing with best run parameters that are init: {}, solver: {}, tol: {}'.format(init, solver, tol))
+        
+        # Continue with the best run's parameters
+        init = model.init
+        solver = model.solver
+        tol = model.tol
+
+    for n_components in range(1, max_components + 1):
+        model = NMF(n_components=n_components, max_iter=max_iter, init=init, solver=solver, tol=tol)
+        W = model.fit_transform(data)
+        H = model.components_
+        reconstruction_err = model.reconstruction_err_
+
+        logging.info('Components: %d, Reconstruction error: %5.3f', n_components, reconstruction_err)
+        
+        print('Run with {} components has been completed'.format(n_components))
+
+        if len(previous_errors) >= patience:
+            if all(abs(previous_errors[-i] - reconstruction_err) < tol for i in range(1, patience + 1)):
+                logging.info('Error has stabilized over the last %d runs.', patience)
+                print('Error has stabilized over the last {} runs.'.format(patience))
+                best_W, best_H = W, H
+                best_reconstruction_err = reconstruction_err
+                best_n_components = n_components
+                break
+
+        previous_errors.append(reconstruction_err)
+        best_W, best_H = W, H
+        best_reconstruction_err = reconstruction_err
+        best_n_components = n_components
+        
+        
+    # Create an elbow plot of the error values from all the runs
+    plt.figure(figsize=(12, 6))
+    plt.plot(previous_errors, marker='o', color='#5c146e', linestyle='-', linewidth=2, markersize=8, alpha=0.7)
+    plt.title('Elbow Plot of NMF Reconstruction Error')
+    plt.xlabel('Number of Components')
+    plt.ylabel('Reconstruction Error')
+    plt.grid(True)
+    plt.show()
+        
+    # Create a waterfall plot of the best W matrix
+    plt.figure(figsize=(12, 6))
+    colors = plt.cm.magma(np.linspace(0, 1, len(best_W[0])))
+
+    for i in range(len(best_W[0])):
+        plt.plot(best_W[:, i] + i * 0.1, label='Component {}'.format(i + 1), color=colors[i])
+
+    plt.title('Waterfall Plot of NMF Components')
+    plt.xlabel('Data Points')
+    plt.ylabel('Components')
+    plt.grid(True)
+    plt.show()
+    
+    print('The best number of components is {}'.format(best_n_components))
+
+    return best_W, best_H, best_reconstruction_err
+
+def cluster_results_basis(data, n_clusters):
+    """
+    Cluster the NMF results using agglomerative clustering and return the clusters.
+
+    Parameters:
+    - data: NMF results data matrix.
+    - n_clusters: Number of clusters to create.
+
+    Returns:
+    - clusters: Cluster assignments for each data point.
+    """
+    from sklearn.cluster import AgglomerativeClustering
+
+    cluster_data = np.array(data).T
+    clustering = AgglomerativeClustering(n_clusters=n_clusters)
+    clusters = clustering.fit_predict(cluster_data)
+    
+    #matching the clusters to the original data
+    data_dict = {"Cluster_Number":[], "Component":[]}
+    
+    x=0
+    while x < len(data[1]):
+        data_dict["Cluster_Number"].append(clusters[x])
+        data_dict["Component"].append(cluster_data[x])
+        x = x+1
+    
+    q = 0
+    while q < n_clusters:
+        z = 0
+        plt.figure(figsize=(5,5))
+        plt.xlabel('X')
+        plt.ylabel('Y')
+        plt.title('Agglomerative Clustering'+' ' +str(q))
+
+        while z < len(data[1]):
+            if data_dict["Cluster_Number"][z] == q:
+                plt.plot(data_dict["Component"][z], label = 'Component'+str(z))
+            z = z+1
+        q = q+1
+    
+    return data_dict
+
+def cluster_results_weights(H_matrix, W_matrix, n_clusters):
+    """
+    Cluster the NMF results using agglomerative clustering and return the clusters.
+
+    Parameters:
+    - data: NMF results data matrix.
+    - n_clusters: Number of clusters to create.
+
+    Returns:
+    - clusters: Cluster assignments for each data point.
+    """
+    from sklearn.cluster import AgglomerativeClustering
+
+    cluster_data = np.array(H_matrix)
+    clustering = AgglomerativeClustering(n_clusters=n_clusters)
+    clusters = clustering.fit_predict(cluster_data)
+    
+    #matching the clusters to the original data
+    data_dict = {"Cluster_Number":[], "Component":[]}
+    
+    x=0
+    while x < len(data[1]):
+        data_dict["Cluster_Number"].append(clusters[x])
+        data_dict["Component"].append(W_matrix[x])
+        x = x+1
+    
+    q = 0
+    while q < n_clusters:
+        z = 0
+        plt.figure(figsize=(5,5))
+        plt.xlabel('X')
+        plt.ylabel('Y')
+        plt.title('Agglomerative Clustering'+' ' +str(q))
+
+        while z < len(data[1]):
+            if data_dict["Cluster_Number"][z] == q:
+                plt.plot(data_dict["Component"][z], label = 'Component'+str(z))
+            z = z+1
+        q = q+1
+    
+    return data_dict
+
+import numpy as np
+from sklearn.cluster import AgglomerativeClustering
+import matplotlib.pyplot as plt
+
+def cluster_results_basis(W_matrix, n_clusters):
+    """
+    Cluster the NMF results using agglomerative clustering on the basis matrix and return the clusters.
+
+    Parameters:
+    - W_matrix: Basis matrix from NMF.
+    - n_clusters: Number of clusters to create.
+
+    Returns:
+    - cluster_dict: Dictionary with cluster assignments and associated components.
+    """
+    # Perform agglomerative clustering on the W matrix
+    clustering = AgglomerativeClustering(n_clusters=n_clusters)
+    clusters = clustering.fit_predict(W_matrix.T)
+    
+    # Create a dictionary to store cluster assignments and associated components
+    cluster_dict = {i: [] for i in range(n_clusters)}
+    
+    for i, cluster in enumerate(clusters):
+        cluster_dict[cluster].append(W_matrix[:, i])
+    
+    # Plot the clusters
+    for cluster, components in cluster_dict.items():
+        plt.figure(figsize=(6, 6))
+        colors = plt.cm.plasma(np.linspace(0, 1, len(components)))
+        
+        for i, component in enumerate(components):
+            plt.plot(component + i * 0.1, label='Component {}'.format(i + 1), color=colors[i])
+        
+        plt.title('Cluster {} Components'.format(cluster))
+        plt.xlabel('Data Points')
+        plt.ylabel('Components')
+        plt.grid(True)
+        plt.show()
+    
+    return cluster_dict
