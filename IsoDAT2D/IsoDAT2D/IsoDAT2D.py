@@ -684,3 +684,32 @@ def cluster_results_basis(W_matrix, n_clusters):
         plt.show()
     
     return cluster_dict
+
+def run_sklearn_nmf_and_agg_cluster(data, max_components, max_iter=600, init='random', solver='cd', tol=1e-4, patience=5, n_clusters=5, cluster_matrix = 'W'):
+    """
+    Run NMF using the sklearn library with flexible parameters and cluster the results using agglomerative clustering.
+
+    Parameters:
+    - data: Input data matrix.
+    - max_components: Maximum number of components to try.
+    - max_iter: Maximum number of iterations (default: 600).
+    - init: Initialization method (default: 'random').
+    - solver: Solver to use (default: 'cd').
+    - tol: Tolerance for error change to consider it stabilized (default: 1e-4).
+    - patience: Number of runs to wait for error stabilization (default: 5).
+    - n_clusters: Number of clusters to create.
+
+    Returns:
+    - best_W: Best basis matrix.
+    - best_H: Best coefficient matrix.
+    - best_reconstruction_err: Best reconstruction error.
+    - clusters: Cluster assignments for the NMF results.
+    """
+    
+    best_W, best_H, best_reconstruction_err = run_sklearn_nmf(data, max_components, max_iter, init, solver, tol, patience)
+    if cluster_matrix == 'W':
+        data_dict = cluster_results_basis(best_W, n_clusters)
+    else:
+        data_dict = cluster_results_weights(best_H, best_W, n_clusters)
+    
+    return best_W, best_H, best_reconstruction_err, data_dict
