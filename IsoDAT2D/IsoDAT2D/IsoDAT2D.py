@@ -930,7 +930,7 @@ def run_sklearn_nmf_and_dbscan(data, max_components, max_iter=600, init='random'
     if cluster_matrix == 'W':
         data_dict = cluster_results_basis_dbscan(best_W, eps, min_samples)
     else:
-        data_dict = cluster_results_weights(H_matrix, W_matrix, eps, min_samples)
+        data_dict = cluster_results_weights(best_W, best_H, eps, min_samples)
     
     return best_W, best_H, best_reconstruction_err, data_dict
 
@@ -960,6 +960,6 @@ def run_sklearn_nmf_and_hdbscan(data, max_components, max_iter=600, init='random
     if cluster_matrix == 'W':
         data_dict = cluster_results_basis_dbscan(best_W, min_cluster_size , min_samples)
     else:
-        data_dict = cluster_results_weights(H_matrix, W_matrix, min_cluster_size , min_samples)
+        data_dict = cluster_results_weights(best_W, best_H, min_cluster_size , min_samples)
     
     return best_W, best_H, best_reconstruction_err, data_dict
