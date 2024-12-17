@@ -606,47 +606,47 @@ def cluster_results_basis(data, n_clusters):
     
     return data_dict
 
+import numpy as np
+from sklearn.cluster import AgglomerativeClustering
+import matplotlib.pyplot as plt
+
 def cluster_results_weights(H_matrix, W_matrix, n_clusters):
     """
     Cluster the NMF results using agglomerative clustering and return the clusters.
 
     Parameters:
-    - data: NMF results data matrix.
+    - H_matrix: Coefficient matrix from NMF.
+    - W_matrix: Basis matrix from NMF.
     - n_clusters: Number of clusters to create.
 
     Returns:
-    - clusters: Cluster assignments for each data point.
+    - cluster_dict: Dictionary with cluster assignments and associated components.
     """
-    from sklearn.cluster import AgglomerativeClustering
-
-    cluster_data = np.array(H_matrix)
+    # Perform agglomerative clustering on the H matrix
     clustering = AgglomerativeClustering(n_clusters=n_clusters)
-    clusters = clustering.fit_predict(cluster_data)
+    clusters = clustering.fit_predict(H_matrix)
     
-    #matching the clusters to the original data
-    data_dict = {"Cluster_Number":[], "Component":[]}
+    # Create a dictionary to store cluster assignments and associated components
+    cluster_dict = {i: [] for i in range(n_clusters)}
     
-    x=0
-    while x < len(W_matrix[1]):
-        data_dict["Cluster_Number"].append(clusters[x])
-        data_dict["Component"].append(W_matrix[x])
-        x = x+1
+    for i, cluster in enumerate(clusters):
+        cluster_dict[cluster].append(W_matrix[:, i])
     
-    q = 0
-    while q < n_clusters:
-        z = 0
-        plt.figure(figsize=(5,5))
-        plt.xlabel('X')
-        plt.ylabel('Y')
-        plt.title('Agglomerative Clustering'+' ' +str(q))
-
-        while z < len(W_matrix[1]):
-            if data_dict["Cluster_Number"][z] == q:
-                plt.plot(data_dict["Component"][z], label = 'Component'+str(z))
-            z = z+1
-        q = q+1
+    # Plot the clusters
+    for cluster, components in cluster_dict.items():
+        plt.figure(figsize=(6, 6))
+        colors = plt.cm.plasma(np.linspace(0, 1, len(components)))
+        
+        for i, component in enumerate(components):
+            plt.plot(component + i * 0.1, label='Component {}'.format(i + 1), color=colors[i])
+        
+        plt.title('Cluster {} Components'.format(cluster))
+        plt.xlabel('Data Points')
+        plt.ylabel('Components')
+        plt.grid(True)
+        plt.show()
     
-    return data_dict
+    return cluster_dict
 
 import numpy as np
 from sklearn.cluster import AgglomerativeClustering
