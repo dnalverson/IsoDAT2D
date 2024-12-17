@@ -640,7 +640,7 @@ def cluster_results_weights(H_matrix, W_matrix, n_clusters):
         plt.ylabel('Y')
         plt.title('Agglomerative Clustering'+' ' +str(q))
 
-        while z < len(data[1]):
+        while z < len(W_matrix[1]):
             if data_dict["Cluster_Number"][z] == q:
                 plt.plot(data_dict["Component"][z], label = 'Component'+str(z))
             z = z+1
