@@ -205,7 +205,7 @@ def time_function(func):
         return result
     return wrapper
 
-@time_function
+
 def image_rotation(image, angle, show = False):
     
     (h, w) = image.shape[:2]
@@ -221,7 +221,7 @@ def image_rotation(image, angle, show = False):
         plt.show()
     return rotated_image
 
-@time_function
+
 def rotate_integrate_image_gpu(combined_image,angle_of_rotation, distance, wavelength, resolution = 3000, mask = None, show = True, radial_range = None):
     """
     This function integrates the combined image using the azimuthal integrator and displays the 1D image.
