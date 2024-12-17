@@ -1,8 +1,8 @@
 # init file for the DAT2D package
-# Authors: Danielle Alverson
+# Authors: Danielle N. Alverson
 # created: 2023-02-2
-# last modified: 2023-11-16
-# version: 0.1.0
+# last modified: 2024-12-17
+# version: 1.0.0
 
 # import modules
 
