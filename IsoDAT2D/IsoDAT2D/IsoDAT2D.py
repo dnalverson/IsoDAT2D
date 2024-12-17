@@ -689,6 +689,192 @@ def cluster_results_basis(W_matrix, n_clusters):
     
     return cluster_dict
 
+from sklearn.cluster import DBSCAN
+import numpy as np
+import matplotlib.pyplot as plt
+
+def cluster_results_weights_dbscan(H_matrix, W_matrix, eps = 10, min_samples = 5):
+    """
+    Cluster the NMF results using DBSCAN and return the clusters.
+
+    Parameters:
+    - H_matrix: Coefficient matrix from NMF.
+    - W_matrix: Basis matrix from NMF.
+    - eps: The maximum distance between two samples for one to be considered as in the neighborhood of the other.
+    - min_samples: The number of samples in a neighborhood for a point to be considered as a core point.
+
+    Returns:
+    - cluster_dict: Dictionary with cluster assignments and associated components.
+    """
+    # Perform DBSCAN clustering on the H matrix
+    clustering = DBSCAN(eps=eps, min_samples=min_samples)
+    clusters = clustering.fit_predict(H_matrix)
+    
+    # Create a dictionary to store cluster assignments and associated components
+    unique_clusters = set(clusters)
+    cluster_dict = {cluster: [] for cluster in unique_clusters}
+    
+    for i, cluster in enumerate(clusters):
+        cluster_dict[cluster].append(W_matrix[:, i])
+    
+    # Plot the clusters
+    for cluster, components in cluster_dict.items():
+        plt.figure(figsize=(6, 6))
+        if cluster == -1:
+            colors = ['red'] * len(components)  # Use red for noise points
+        else:
+            colors = plt.cm.plasma(np.linspace(0, 1, len(components)))
+        
+        for i, component in enumerate(components):
+            plt.plot(component + i * 0.1, label='Component {}'.format(i + 1), color=colors[i])
+        
+        plt.title('Cluster {} Components'.format('Noise' if cluster == -1 else cluster))
+        plt.xlabel('Data Points')
+        plt.ylabel('Components')
+        plt.grid(True)
+        plt.show()
+    
+    return cluster_dict
+
+import numpy as np
+from sklearn.cluster import DBSCAN
+import matplotlib.pyplot as plt
+
+def cluster_results_basis_dbscan(W_matrix, eps = 10, min_samples = 5):
+    """
+    Cluster the NMF results using DBSCAN on the basis matrix and return the clusters.
+
+    Parameters:
+    - W_matrix: Basis matrix from NMF.
+    - eps: The maximum distance between two samples for one to be considered as in the neighborhood of the other.
+    - min_samples: The number of samples in a neighborhood for a point to be considered as a core point.
+
+    Returns:
+    - cluster_dict: Dictionary with cluster assignments and associated components.
+    """
+    # Perform DBSCAN clustering on the W matrix
+    clustering = DBSCAN(eps=eps, min_samples=min_samples)
+    clusters = clustering.fit_predict(W_matrix.T)
+    
+    # Create a dictionary to store cluster assignments and associated components
+    unique_clusters = set(clusters)
+    cluster_dict = {cluster: [] for cluster in unique_clusters}
+    
+    for i, cluster in enumerate(clusters):
+        cluster_dict[cluster].append(W_matrix[:, i])
+    
+    # Plot the clusters
+    for cluster, components in cluster_dict.items():
+        plt.figure(figsize=(6, 6))
+        if cluster == -1:
+            colors = ['red'] * len(components)  # Use red for noise points
+        else:
+            colors = plt.cm.plasma(np.linspace(0, 1, len(components)))
+        
+        for i, component in enumerate(components):
+            plt.plot(component + i * 0.1, label='Component {}'.format(i + 1), color=colors[i])
+        
+        plt.title('Cluster {} Components'.format('Noise' if cluster == -1 else cluster))
+        plt.xlabel('Data Points')
+        plt.ylabel('Components')
+        plt.grid(True)
+        plt.show()
+    
+    return cluster_dict
+
+import hdbscan
+import numpy as np
+import matplotlib.pyplot as plt
+
+def cluster_results_weights_hdbscan(H_matrix, W_matrix, min_cluster_size = 10, min_samples = 5):
+    """
+    Cluster the NMF results using HDBSCAN and return the clusters.
+
+    Parameters:
+    - H_matrix: Coefficient matrix from NMF.
+    - W_matrix: Basis matrix from NMF.
+    - min_cluster_size: The minimum size of clusters.
+    - min_samples: The number of samples in a neighborhood for a point to be considered as a core point.
+
+    Returns:
+    - cluster_dict: Dictionary with cluster assignments and associated components.
+    """
+    # Perform HDBSCAN clustering on the H matrix
+    clustering = hdbscan.HDBSCAN(min_cluster_size=min_cluster_size, min_samples=min_samples)
+    clusters = clustering.fit_predict(H_matrix)
+    
+    # Create a dictionary to store cluster assignments and associated components
+    unique_clusters = set(clusters)
+    cluster_dict = {cluster: [] for cluster in unique_clusters}
+    
+    for i, cluster in enumerate(clusters):
+        cluster_dict[cluster].append(W_matrix[:, i])
+    
+    # Plot the clusters
+    for cluster, components in cluster_dict.items():
+        plt.figure(figsize=(6, 6))
+        if cluster == -1:
+            colors = ['red'] * len(components)  # Use red for noise points
+        else:
+            colors = plt.cm.plasma(np.linspace(0, 1, len(components)))
+        
+        for i, component in enumerate(components):
+            plt.plot(component + i * 0.1, label='Component {}'.format(i + 1), color=colors[i])
+        
+        plt.title('Cluster {} Components'.format('Noise' if cluster == -1 else cluster))
+        plt.xlabel('Data Points')
+        plt.ylabel('Components')
+        plt.grid(True)
+        plt.show()
+    
+    return cluster_dict
+
+import hdbscan
+import numpy as np
+import matplotlib.pyplot as plt
+
+def cluster_results_basis_hdbscan(W_matrix, min_cluster_size = 10, min_samples = 5):
+    """
+    Cluster the NMF results using HDBSCAN on the basis matrix and return the clusters.
+
+    Parameters:
+    - W_matrix: Basis matrix from NMF.
+    - min_cluster_size: The minimum size of clusters.
+    - min_samples: The number of samples in a neighborhood for a point to be considered as a core point.
+
+    Returns:
+    - cluster_dict: Dictionary with cluster assignments and associated components.
+    """
+    # Perform HDBSCAN clustering on the W matrix
+    clustering = hdbscan.HDBSCAN(min_cluster_size=min_cluster_size, min_samples=min_samples)
+    clusters = clustering.fit_predict(W_matrix.T)
+    
+    # Create a dictionary to store cluster assignments and associated components
+    unique_clusters = set(clusters)
+    cluster_dict = {cluster: [] for cluster in unique_clusters}
+    
+    for i, cluster in enumerate(clusters):
+        cluster_dict[cluster].append(W_matrix[:, i])
+    
+    # Plot the clusters
+    for cluster, components in cluster_dict.items():
+        plt.figure(figsize=(6, 6))
+        if cluster == -1:
+            colors = ['red'] * len(components)  # Use red for noise points
+        else:
+            colors = plt.cm.plasma(np.linspace(0, 1, len(components)))
+        
+        for i, component in enumerate(components):
+            plt.plot(component + i * 0.1, label='Component {}'.format(i + 1), color=colors[i])
+        
+        plt.title('Cluster {} Components'.format('Noise' if cluster == -1 else cluster))
+        plt.xlabel('Data Points')
+        plt.ylabel('Components')
+        plt.grid(True)
+        plt.show()
+    
+    return cluster_dict
+
 def run_sklearn_nmf_and_agg_cluster(data, max_components, max_iter=600, init='random', solver='cd', tol=1e-4, patience=5, n_clusters=5, cluster_matrix = 'W'):
     """
     Run NMF using the sklearn library with flexible parameters and cluster the results using agglomerative clustering.
@@ -715,5 +901,65 @@ def run_sklearn_nmf_and_agg_cluster(data, max_components, max_iter=600, init='ra
         data_dict = cluster_results_basis(best_W, n_clusters)
     else:
         data_dict = cluster_results_weights(best_H, best_W, n_clusters)
+    
+    return best_W, best_H, best_reconstruction_err, data_dict
+
+def run_sklearn_nmf_and_dbscan(data, max_components, max_iter=600, init='random', solver='cd', tol=1e-4, patience=5, eps = 10, min_samples = 5, cluster_matrix = 'W'):
+    """
+    Run NMF using the sklearn library with flexible parameters and cluster the results using dbscan clustering
+
+    Parameters:
+    - data: Input data matrix.
+    - max_components: Maximum number of components to try.
+    - max_iter: Maximum number of iterations (default: 600).
+    - init: Initialization method (default: 'random').
+    - solver: Solver to use (default: 'cd').
+    - tol: Tolerance for error change to consider it stabilized (default: 1e-4).
+    - patience: Number of runs to wait for error stabilization (default: 5).
+    - eps: The maximum distance between two samples for one to be considered as in the neighborhood of the other.
+    - min_samples: The number of samples in a neighborhood for a point to be considered as a core point.
+
+    Returns:
+    - best_W: Best basis matrix.
+    - best_H: Best coefficient matrix.
+    - best_reconstruction_err: Best reconstruction error.
+    - clusters: Cluster assignments for the NMF results.
+    """
+    
+    best_W, best_H, best_reconstruction_err = run_sklearn_nmf(data, max_components, max_iter, init, solver, tol, patience)
+    if cluster_matrix == 'W':
+        data_dict = cluster_results_basis_dbscan(best_W, eps, min_samples)
+    else:
+        data_dict = cluster_results_weights(H_matrix, W_matrix, eps, min_samples)
+    
+    return best_W, best_H, best_reconstruction_err, data_dict
+
+def run_sklearn_nmf_and_hdbscan(data, max_components, max_iter=600, init='random', solver='cd', tol=1e-4, patience=5, min_cluster_size = 10, min_samples = 5, cluster_matrix = 'W'):
+    """
+    Run NMF using the sklearn library with flexible parameters and cluster the results using dbscan clustering
+
+    Parameters:
+    - data: Input data matrix.
+    - max_components: Maximum number of components to try.
+    - max_iter: Maximum number of iterations (default: 600).
+    - init: Initialization method (default: 'random').
+    - solver: Solver to use (default: 'cd').
+    - tol: Tolerance for error change to consider it stabilized (default: 1e-4).
+    - patience: Number of runs to wait for error stabilization (default: 5).
+    - eps: The maximum distance between two samples for one to be considered as in the neighborhood of the other.
+    - min_samples: The number of samples in a neighborhood for a point to be considered as a core point.
+
+    Returns:
+    - best_W: Best basis matrix.
+    - best_H: Best coefficient matrix.
+    - best_reconstruction_err: Best reconstruction error.
+    - clusters: Cluster assignments for the NMF results.
+    """
+    
+    best_W, best_H, best_reconstruction_err = run_sklearn_nmf(data, max_components, max_iter, init, solver, tol, patience)
+    if cluster_matrix == 'W':
+        data_dict = cluster_results_basis_dbscan(best_W, min_cluster_size , min_samples)
+    else:
+        data_dict = cluster_results_weights(H_matrix, W_matrix, min_cluster_size , min_samples)
     
     return best_W, best_H, best_reconstruction_err, data_dict
