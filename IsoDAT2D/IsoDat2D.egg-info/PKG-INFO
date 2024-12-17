@@ -1,8 +1,8 @@
 Metadata-Version: 2.1
 Name: IsoDat2D
-Version: 0.1.0
+Version: 1.0.0
 Summary: To process thin film X-ray total scattering data using unsupervised machine learning
-Home-page: https://github.com/dnalverson/ml-for-thinfilmdata
+Home-page: https://github.com/dnalverson/IsoDAT2D
 Author-email: dalverson@ufl.edu
 Requires-Dist: matplotlib
 Requires-Dist: pyFAI

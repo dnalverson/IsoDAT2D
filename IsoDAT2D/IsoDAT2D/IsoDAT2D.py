@@ -782,7 +782,7 @@ def cluster_results_basis_dbscan(W_matrix, eps = 10, min_samples = 5):
     
     return cluster_dict
 
-import hdbscan
+from sklearn.cluster import HDBSCAN
 import numpy as np
 import matplotlib.pyplot as plt
 
@@ -800,7 +800,7 @@ def cluster_results_weights_hdbscan(H_matrix, W_matrix, min_cluster_size = 10, m
     - cluster_dict: Dictionary with cluster assignments and associated components.
     """
     # Perform HDBSCAN clustering on the H matrix
-    clustering = hdbscan.HDBSCAN(min_cluster_size=min_cluster_size, min_samples=min_samples)
+    clustering = HDBSCAN(min_cluster_size=min_cluster_size, min_samples=min_samples)
     clusters = clustering.fit_predict(H_matrix)
     
     # Create a dictionary to store cluster assignments and associated components
@@ -829,7 +829,7 @@ def cluster_results_weights_hdbscan(H_matrix, W_matrix, min_cluster_size = 10, m
     
     return cluster_dict
 
-import hdbscan
+from sklearn.cluster import HDBSCAN
 import numpy as np
 import matplotlib.pyplot as plt
 
@@ -846,7 +846,7 @@ def cluster_results_basis_hdbscan(W_matrix, min_cluster_size = 10, min_samples =
     - cluster_dict: Dictionary with cluster assignments and associated components.
     """
     # Perform HDBSCAN clustering on the W matrix
-    clustering = hdbscan.HDBSCAN(min_cluster_size=min_cluster_size, min_samples=min_samples)
+    clustering = HDBSCAN(min_cluster_size=min_cluster_size, min_samples=min_samples)
     clusters = clustering.fit_predict(W_matrix.T)
     
     # Create a dictionary to store cluster assignments and associated components
