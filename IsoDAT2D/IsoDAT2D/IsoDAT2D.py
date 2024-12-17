@@ -475,6 +475,9 @@ def run_sklearn_nmf(data, max_components, max_iter=600, init='random', solver='c
     
     warnings.filterwarnings("ignore")
     
+    print('Starting NMF algorithm with the following parameters:\n')
+    print('Max components: {}\nMax iterations: {}\nInit: {}\nSolver: {}\nTolerance: {}\nPatience: {}\nRandom')
+    
     best_W, best_H = None, None
     best_reconstruction_err = float('inf')
     best_n_components = 0
