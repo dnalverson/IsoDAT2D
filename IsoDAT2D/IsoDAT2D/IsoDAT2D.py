@@ -627,7 +627,7 @@ def cluster_results_weights(H_matrix, W_matrix, n_clusters):
     data_dict = {"Cluster_Number":[], "Component":[]}
     
     x=0
-    while x < len(data[1]):
+    while x < len(W_matrix[1]):
         data_dict["Cluster_Number"].append(clusters[x])
         data_dict["Component"].append(W_matrix[x])
         x = x+1
