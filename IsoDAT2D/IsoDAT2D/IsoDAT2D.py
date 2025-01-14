@@ -221,8 +221,35 @@ def image_rotation(image, angle, show = False):
         plt.show()
     return rotated_image
 
+def read_poni_file(poni_file):
+    """
+    This function reads a .poni file and extracts the distance and wavelength, rotation, and poni from the file.
+    
+    Parameters:
+        poni_file (str): The path to the .poni file.
+    """
+    #read the .poni file and extract the distance and wavelength from the file
+    with open(poni_file, 'r') as file:
+        for line in file:
+            if 'Distance:' in line:
+                distance = float(line.split()[1])
+            if 'Wavelength:' in line:
+                wavelength = float(line.split()[1])
+            if 'Rot1:' in line:
+                rot1 = float(line.split()[1])
+            if 'Rot2:' in line:
+                rot2 = float(line.split()[1])
+            if 'Rot3:' in line:
+                rot3 = float(line.split()[1])
+            if 'Poni1:' in line:
+                poni1 = float(line.split()[1])
+            if 'Poni2:' in line:
+                poni2 = float(line.split()[1])
+    
+    return distance, wavelength, rot1, rot2, rot3, poni1, poni2
 
-def rotate_integrate_image_gpu(combined_image,angle_of_rotation, distance, wavelength, resolution = 3000, mask = None, show = True, radial_range = None):
+
+def rotate_integrate_image_gpu(combined_image,angle_of_rotation, distance, wavelength, resolution = 3000, mask = None, show = True, radial_range = None, poni = None):
     """
     This function integrates the combined image using the azimuthal integrator and displays the 1D image.
     
@@ -232,14 +259,19 @@ def rotate_integrate_image_gpu(combined_image,angle_of_rotation, distance, wavel
     data = {}
     #initialize the azimuthal integrator
     
-     # Initialize the detector
-    dete = pyFAI.detectors.Perkin()
-    p1, p2, p3 = dete.calc_cartesian_positions()
-    poni1 = p1.mean()
-    poni2 = p2.mean()
+    if poni is not None:
+        distance, wavelength, rot1, rot2, rot3, poni1, poni2 = read_poni_file(poni)
+        ai = AI.AzimuthalIntegrator(dist=distance, poni1=poni1, poni2=poni2, rot1=rot1, rot2=rot2, rot3=rot3, detector='perkin', wavelength=wavelength)
+    else:
+        # Initialize the detector
+        dete = pyFAI.detectors.Perkin()
+        p1, p2, p3 = dete.calc_cartesian_positions()
+        poni1 = p1.mean()
+        poni2 = p2.mean()
+        
+        target = (0,0)
+        ai = AI.AzimuthalIntegrator(dist=distance, poni1=poni1, poni2=poni2, detector=dete, wavelength=wavelength)
     
-    target = (0,0)
-    ai = AI.AzimuthalIntegrator(dist=distance, poni1=poni1, poni2=poni2, detector=dete, wavelength=wavelength)
     #initialize engine
     res0 = ai.integrate1d(combined_image, resolution, radial_range = radial_range, unit = 'q_A^-1', mask = mask, method=("bbox", "csr", "opencl", target))
     
