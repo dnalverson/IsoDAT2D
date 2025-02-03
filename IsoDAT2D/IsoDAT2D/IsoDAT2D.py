@@ -269,10 +269,10 @@ def rotate_integrate_image_gpu(combined_image,angle_of_rotation, distance, wavel
         poni1 = p1.mean()
         poni2 = p2.mean()
         
-        target = (0,0)
         ai = AI.AzimuthalIntegrator(dist=distance, poni1=poni1, poni2=poni2, detector=dete, wavelength=wavelength)
     
     #initialize engine
+    target = (0,0)
     res0 = ai.integrate1d(combined_image, resolution, radial_range = radial_range, unit = 'q_A^-1', mask = mask, method=("bbox", "csr", "opencl", target))
     
     # Get the engine from res0
