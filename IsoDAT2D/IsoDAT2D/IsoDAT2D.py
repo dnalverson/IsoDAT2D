@@ -1,4 +1,4 @@
-# Copyright (c) 2024, Danielle N. Alverson
+# Copyright (c) 2025, Danielle N. Alverson
 # All rights reserved.
 #
 # This software is licensed under the BSD 3-Clause License.
@@ -245,8 +245,10 @@ def read_poni_file(poni_file):
                 poni1 = float(line.split()[1])
             if 'Poni2:' in line:
                 poni2 = float(line.split()[1])
+            if 'Detector:' in line:
+                detector = line.split()[1]
     
-    return distance, wavelength, rot1, rot2, rot3, poni1, poni2
+    return distance, wavelength, rot1, rot2, rot3, poni1, poni2, detector
 
 
 def rotate_integrate_image_gpu(combined_image,angle_of_rotation, distance, wavelength, resolution = 3000, mask = None, show = True, radial_range = None, poni = None):
@@ -260,8 +262,8 @@ def rotate_integrate_image_gpu(combined_image,angle_of_rotation, distance, wavel
     #initialize the azimuthal integrator
     
     if poni is not None:
-        distance, wavelength, rot1, rot2, rot3, poni1, poni2 = read_poni_file(poni)
-        ai = AI.AzimuthalIntegrator(dist=distance, poni1=poni1, poni2=poni2, rot1=rot1, rot2=rot2, rot3=rot3, detector='perkin', wavelength=wavelength)
+        distance, detector, wavelength, rot1, rot2, rot3, poni1, poni2 = read_poni_file(poni)
+        ai = AI.AzimuthalIntegrator(dist=distance, poni1=poni1, poni2=poni2, rot1=rot1, rot2=rot2, rot3=rot3, detector=detector, wavelength=wavelength)
     else:
         # Initialize the detector
         dete = pyFAI.detectors.Perkin()
