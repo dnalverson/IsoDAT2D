@@ -196,6 +196,84 @@ import pyopencl.array as cla
 import time
 import cv2
 
+def center_and_crop(image, crop_size=1400):
+    """
+    Displays an image, lets the user click 3 times to pick a center,
+    then crops the image to a square region of `crop_size` x `crop_size`.
+    """
+    # Display image for clicks
+    plt.figure("Select 3 Points", figsize=(14, 14))
+    plt.imshow(image, vmin=0, vmax=1000000)
+    plt.title("Click 3 times to select the center for cropping")
+    plt.axis("on")
+    
+    # Capture exactly 3 clicks
+    points = plt.ginput(3, timeout=-1)
+    plt.close()
+    
+    if len(points) != 3:
+        raise ValueError("You must click exactly 3 points.")
+    
+    # Compute the average click position
+    center_x = int(np.mean([pt[0] for pt in points]))
+    center_y = int(np.mean([pt[1] for pt in points]))
+    print(f"Computed center: ({center_x}, {center_y})")
+    
+    # Calculate half-size
+    half_size = crop_size // 2
+    
+    # Tentative boundaries
+    x_min = center_x - half_size
+    x_max = center_x + half_size
+    y_min = center_y - half_size
+    y_max = center_y + half_size
+    
+    # Ensure we don't go outside the image
+    height, width = image.shape[:2]
+    if x_min < 0:
+        x_min = 0
+        x_max = min(crop_size, width)
+    if y_min < 0:
+        y_min = 0
+        y_max = min(crop_size, height)
+    if x_max > width:
+        x_max = width
+        x_min = max(0, width - crop_size)
+    if y_max > height:
+        y_max = height
+        y_min = max(0, height - crop_size)
+    
+    # Crop
+    cropped_image = image[y_min:y_max, x_min:x_max]
+    
+    return cropped_image
+
+def create_line_mask(image):
+    """
+    Creates a mask where True indicates valid pixel
+    """
+    mask = (image > 0)
+    return mask
+
+def preprocess_pilatus(file_name, crop_size=1400):
+    """
+    Loads a file, centers & crops (if needed), and creates a line mask.
+    Returns (mask, corrected_image).
+    """
+    # Simple check to see if it's a CBF file
+    if file_name.lower().endswith(".cbf"):
+        print(f"Detected CBF file: {file_name}")
+        image_data = fabio.open(file_name).data
+        # Center & crop
+        corrected_image = center_and_crop(image_data, crop_size=crop_size)
+    else:
+        print(f"Detected non-CBF file: {file_name}")
+    
+    # Create the mask to remove lines/gaps
+    mask = create_line_mask(corrected_image)
+    
+    return mask, corrected_image
+
 def time_function(func):
     def wrapper(*args, **kwargs):
         start_time = time.time()
