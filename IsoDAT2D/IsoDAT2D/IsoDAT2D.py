@@ -18,6 +18,7 @@ import nimfa
 import pyFAI
 from sklearn.cluster import AgglomerativeClustering
 import masking
+import fabio
 
 def attempt(Real_Data, Length, i, init= None, solver = 'cd', beta_loss = 'frobenius', iter = 500):
     NMF_model = NMF(n_components=i, init = init, solver = solver, beta_loss = beta_loss, max_iter = iter)
