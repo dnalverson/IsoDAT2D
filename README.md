@@ -1,6 +1,6 @@
 # IsoDAT2D
 
- A tool for processing thin film total scattering data using non-negative matric factorization and hierarchical agglomerative clustering.
+ A tool created by the [Butala Research Group](https://github.com/ButalaResearchGroup) for processing thin film total scattering data using non-negative matric factorization and hierarchical agglomerative clustering.
 
  ![Alt text](IsoDAT2D/Slide4.PNG)
 
