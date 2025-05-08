@@ -29,7 +29,7 @@ Instructions on how to clone, and get the project running locally.
 git clone https://github.com/dnalverson/IsoDAT2D
 
 # Change into the project directory
-cd IsoDAT2D
+cd IsoDAT2D\IsoDAT2D
 
 # Install dependencies
 pip install -e .
