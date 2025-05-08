@@ -201,6 +201,7 @@ def center_and_crop(image, crop_size=1400):
     """
     Displays an image, lets the user click 3 times to pick a center,
     then crops the image to a square region of `crop_size` x `crop_size`.
+    Tutorial for main function located in Tutorials --> Center_crop-tutorial.py
     """
     # Display image for clicks
     plt.figure("Select 3 Points", figsize=(14, 14))
