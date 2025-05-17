@@ -1,6 +1,6 @@
 # IsoDAT2D
 
- A tool for analyzing thin film total scattering measurments with non-negative matric factorization and hierarchical agglomerative clustering.
+ A tool created by the [Butala Research Group](https://github.com/ButalaResearchGroup) for processing thin film total scattering data using non-negative matric factorization and hierarchical agglomerative clustering.
 
  ![Alt text](IsoDAT2D/Slide4.PNG)
 
@@ -29,7 +29,7 @@ Instructions on how to clone, and get the project running locally.
 git clone https://github.com/dnalverson/IsoDAT2D
 
 # Change into the project directory
-cd IsoDAT2D
+cd IsoDAT2D\IsoDAT2D
 
 # Install dependencies
 pip install -e .

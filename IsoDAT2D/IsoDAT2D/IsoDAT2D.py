@@ -1,4 +1,4 @@
-# Copyright (c) 2024, Danielle N. Alverson
+# Copyright (c) 2025, Danielle N. Alverson
 # All rights reserved.
 #
 # This software is licensed under the BSD 3-Clause License.
@@ -18,6 +18,7 @@ import nimfa
 import pyFAI
 from sklearn.cluster import AgglomerativeClustering
 import masking
+import fabio
 
 def attempt(Real_Data, Length, i, init= None, solver = 'cd', beta_loss = 'frobenius', iter = 500):
     NMF_model = NMF(n_components=i, init = init, solver = solver, beta_loss = beta_loss, max_iter = iter)
@@ -196,6 +197,85 @@ import pyopencl.array as cla
 import time
 import cv2
 
+def center_and_crop(image, crop_size=1400):
+    """
+    Displays an image, lets the user click 3 times to pick a center,
+    then crops the image to a square region of `crop_size` x `crop_size`.
+    Tutorial for main function located in Tutorials --> Center_crop-tutorial.py
+    """
+    # Display image for clicks
+    plt.figure("Select 3 Points", figsize=(14, 14))
+    plt.imshow(image, vmin=0, vmax=1000000)
+    plt.title("Click 3 times to select the center for cropping")
+    plt.axis("on")
+    
+    # Capture exactly 3 clicks
+    points = plt.ginput(3, timeout=-1)
+    plt.close()
+    
+    if len(points) != 3:
+        raise ValueError("You must click exactly 3 points.")
+    
+    # Compute the average click position
+    center_x = int(np.mean([pt[0] for pt in points]))
+    center_y = int(np.mean([pt[1] for pt in points]))
+    print(f"Computed center: ({center_x}, {center_y})")
+    
+    # Calculate half-size
+    half_size = crop_size // 2
+    
+    # Tentative boundaries
+    x_min = center_x - half_size
+    x_max = center_x + half_size
+    y_min = center_y - half_size
+    y_max = center_y + half_size
+    
+    # Ensure we don't go outside the image
+    height, width = image.shape[:2]
+    if x_min < 0:
+        x_min = 0
+        x_max = min(crop_size, width)
+    if y_min < 0:
+        y_min = 0
+        y_max = min(crop_size, height)
+    if x_max > width:
+        x_max = width
+        x_min = max(0, width - crop_size)
+    if y_max > height:
+        y_max = height
+        y_min = max(0, height - crop_size)
+    
+    # Crop
+    cropped_image = image[y_min:y_max, x_min:x_max]
+    
+    return cropped_image
+
+def create_line_mask(image):
+    """
+    Creates a mask where True indicates valid pixel
+    """
+    mask = (image > 0)
+    return mask
+
+def preprocess_pilatus(file_name, crop_size=1400):
+    """
+    Loads a file, centers & crops (if needed), and creates a line mask.
+    Returns (mask, corrected_image).
+    """
+    # Simple check to see if it's a CBF file
+    if file_name.lower().endswith(".cbf"):
+        print(f"Detected CBF file: {file_name}")
+        image_data = fabio.open(file_name).data
+        # Center & crop
+        corrected_image = center_and_crop(image_data, crop_size=crop_size)
+    else:
+        print(f"Detected non-CBF file: {file_name}")
+    
+    # Create the mask to remove lines/gaps
+    mask = create_line_mask(corrected_image)
+    
+    return mask, corrected_image
+
 def time_function(func):
     def wrapper(*args, **kwargs):
         start_time = time.time()
@@ -245,8 +325,10 @@ def read_poni_file(poni_file):
                 poni1 = float(line.split()[1])
             if 'Poni2:' in line:
                 poni2 = float(line.split()[1])
+            if 'Detector:' in line:
+                detector = line.split()[1]
     
-    return distance, wavelength, rot1, rot2, rot3, poni1, poni2
+    return distance, wavelength, rot1, rot2, rot3, poni1, poni2, detector
 
 
 def rotate_integrate_image_gpu(combined_image,angle_of_rotation, distance, wavelength, resolution = 3000, mask = None, show = True, radial_range = None, poni = None):
@@ -260,8 +342,8 @@ def rotate_integrate_image_gpu(combined_image,angle_of_rotation, distance, wavel
     #initialize the azimuthal integrator
     
     if poni is not None:
-        distance, wavelength, rot1, rot2, rot3, poni1, poni2 = read_poni_file(poni)
-        ai = AI.AzimuthalIntegrator(dist=distance, poni1=poni1, poni2=poni2, rot1=rot1, rot2=rot2, rot3=rot3, detector='perkin', wavelength=wavelength)
+        distance, detector, wavelength, rot1, rot2, rot3, poni1, poni2 = read_poni_file(poni)
+        ai = AI.AzimuthalIntegrator(dist=distance, poni1=poni1, poni2=poni2, rot1=rot1, rot2=rot2, rot3=rot3, detector=detector, wavelength=wavelength)
     else:
         # Initialize the detector
         dete = pyFAI.detectors.Perkin()
